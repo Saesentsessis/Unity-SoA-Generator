@@ -54,14 +54,68 @@ This generator is built explicitly from the ground up for **Unity.**
 | **Cache Alignment**     | CLR Default                    | Explicit Cache-Line padding                     |
 | **Disposal**            | Garbage Collected (GC)         | Native `Dispose(JobHandle)` dependency tracking |
 
+## Requirements
+
+- Unity **2021.3** or newer
+- [`com.saesentsessis.unity-collections-specialized`](https://github.com/Saesentsessis/Unity-Collections-Specialized) **0.1.1** or newer
+- [`com.unity.collections`](https://docs.unity3d.com/Packages/com.unity.collections@latest) **2.1.4** or newer
+- [`com.unity.burst`](https://docs.unity3d.com/Packages/com.unity.burst@latest) **1.8.0** or newer
+
 ## Installation
 
-You can install this tool via the Unity Package Manager (UPM).
+### Method 1: OpenUPM (Recommended)
 
-1. Open Unity and navigate to Window > Package Manager.
-2. Click the + icon in the top left corner and select Add package from git URL...
-3. Enter the following URL: https://github.com/Saesentsessis/Unity-SoA-Generator.git
+You can install this package via the [OpenUPM](https://openupm.com/) CLI:
+
+```bash
+openupm add com.saesentsessis.unity-collections-specialized
+```
+
+Or manually add the scoped registry to your `Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "com.saesentsessis.unity-collections-specialized": "0.1.1",
+  },
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.saesentsessis"
+      ]
+    }
+  ]
+}
+```
+
+### Method 2: Unity package installer
+
+1. Download the latest `.unitypackage` from [GitHub Releases page](https://github.com/Saesentsessis/Unity-SoA-Generator/releases).
+   - _Direct Link:_ [Unity-Collections-Specialized-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.0/Unity-SoA-Generator-Installer.unitypackage)
+2. Import the downloaded package into your Unity project.
+3. The installer will automatically configure OpenUPM in your `manifest.json` file and install the package dependencies.
+
+### Method 3: Manual installation
+
+1. Open Unity and navigate to `Window` > `Package Manager`.
+2. Click on the `+` icon in the top left corner and select `Add package from git URL...`.
+3. Enter the following URL:
+```
+https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root
+```
 4. Click Add.
+5. Repeat all steps for the dependent repository:
+```
+https://github.com/Saesentsessis/Unity-Collections-Specialized.git?path=Unity-Collections-Specialized/Assets/root
+```
+
+You can specify exact release version of this package like this:
+
+```
+https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root#1.0.0
+```
 
 ## Quick Start
 
