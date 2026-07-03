@@ -21,7 +21,7 @@
       "name": "package.openupm.com",
       "url": "https://package.openupm.com",
       "scopes": [
-        "com.saesentsessis.unity-collections-specialized"
+        "com.saesentsessis"
       ]
     }
   ]

@@ -32,7 +32,7 @@ namespace Saesentsessis.DOD.SoA.Generator.Installer
         public const string RegistryUrl = "https://package.openupm.com";
         public static readonly string[] PackageIds =
         {
-            "com.saesentsessis.unity-collections-specialized"
+            "com.saesentsessis"
         };
 
         /// <summary>
