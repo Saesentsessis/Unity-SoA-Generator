@@ -1,0 +1,25 @@
+{
+    "name": "com.saesentsessis.unity-soa-generator.Tests",
+    "rootNamespace": "Saesentsessis.DOD.SoA.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "com.saesentsessis.unity-soa-generator.Runtime",
+        "Unity.Collections",
+        "Unity.Collections.Specialized",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

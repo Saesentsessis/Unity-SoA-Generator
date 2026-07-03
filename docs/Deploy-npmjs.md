@@ -56,7 +56,7 @@ When your package is distributed, you can install it into any Unity project.
 - Run the command
 
   ```bash
-  openupm --registry https://registry.npmjs.org add YOUR_PACKAGE_NAME
+  openupm --registry https://registry.npmjs.org add com.saesentsessis.unity-soa-generator
   ```
 
 ### Alternative manual installation

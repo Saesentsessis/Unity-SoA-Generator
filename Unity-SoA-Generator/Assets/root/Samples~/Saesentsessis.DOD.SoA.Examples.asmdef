@@ -1,0 +1,20 @@
+{
+    "name": "Saesentsessis.Unity-SoA-Generator.Examples",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2665a8d13d1b3f18800f46e256720795",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:e0cd26848372d4e5c891c569017e11f1",
+        "GUID:c4d645b725be3444b939c500bcfe66db",
+        "GUID:186fc7f76f9dacf41a0c8575cc3d9a7f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

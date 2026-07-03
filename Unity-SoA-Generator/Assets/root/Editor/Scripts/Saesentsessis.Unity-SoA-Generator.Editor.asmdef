@@ -1,0 +1,19 @@
+{
+    "name": "com.saesentsessis.unity-soa-generator.Editor",
+    "rootNamespace": "Saesentsessis.DOD.SoA.Editor",
+    "references": [
+        "com.saesentsessis.unity-soa-generator.Runtime",
+        "Unity.Collections"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

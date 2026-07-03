@@ -1,15 +1,9 @@
 # OpenUPM Package Signing
 
-> **Template note:** This is a template document. Replace `YOUR_PACKAGE_ID`
-> (your reverse-domain package id, e.g. `com.company.package`) and
-> `IvanMurzak/YOUR_REPO` (your `owner/repo` slug) with your real values when you
-> adopt this package as a real one. The placeholders match those used in
-> `.github/workflows/release.yml-sample`.
-
 Unity 6.3 introduced a package-signature check that surfaces a trust warning for
 unsigned UPM packages installed from third-party registries (including OpenUPM).
 This document describes how a package built from this template signs its
-`YOUR_PACKAGE_ID` package so the warning no longer appears in Unity 6.3+.
+`com.saesentsessis.unity-soa-generator` package so the warning no longer appears in Unity 6.3+.
 
 ## How signing works
 
@@ -23,15 +17,14 @@ References:
 - <https://openupm.com/blog/signing-upm-packages-with-openupm/>
 - Reference workflow / repo layout: <https://github.com/openupm/com.example.signed-upm>
 
-## What this template ships
+## What this package ships
 
 The signing step is implemented as the `build-signed-upm-package` job in
-[`.github/workflows/release.yml`](../.github/workflows/release.yml) (copied from
-`release.yml-sample`). It runs in parallel with tests and builds on every
+[`.github/workflows/release.yml`](../.github/workflows/release.yml). It runs in parallel with tests and builds on every
 version-bump release commit, packs the package at
-`Unity-Package/Assets/root/` with Unity's UPM CLI, verifies the resulting archive
+`Unity-SoA-Generator/Assets/root/` with Unity's UPM CLI, verifies the resulting archive
 contains `package/.attestation.p7m` and that its basename begins with
-`YOUR_PACKAGE_ID-`, and uploads the signed `.tgz` as a `signed-upm-package`
+`com.saesentsessis.unity-soa-generator-`, and uploads the signed `.tgz` as a `signed-upm-package`
 workflow artifact.
 
 The artifact is then consumed by the atomic publish step in `release-unity-plugin`,
@@ -91,9 +84,9 @@ In this repo's Settings → Secrets and variables → Actions, add:
 CLI equivalent:
 
 ```bash
-gh secret set UPM_SERVICE_ACCOUNT_KEY_ID     --repo IvanMurzak/YOUR_REPO
-gh secret set UPM_SERVICE_ACCOUNT_KEY_SECRET --repo IvanMurzak/YOUR_REPO
-gh secret set UPM_ORG_ID                     --repo IvanMurzak/YOUR_REPO
+gh secret set UPM_SERVICE_ACCOUNT_KEY_ID     --repo Saesentsessis/Unity-SoA-Generator
+gh secret set UPM_SERVICE_ACCOUNT_KEY_SECRET --repo Saesentsessis/Unity-SoA-Generator
+gh secret set UPM_ORG_ID                     --repo Saesentsessis/Unity-SoA-Generator
 ```
 
 ### 3. Make sure the org is authorized to sign your namespace
@@ -105,7 +98,7 @@ to sign package … with the provided credentials and organization`:
   A key from a different org will authenticate but not be allowed to sign.
 - That **organization must be authorized to sign your package's namespace** — the
   reverse-domain name in `package.json` (e.g. `com.company.package`, i.e.
-  `YOUR_PACKAGE_ID`).
+  `com.saesentsessis.unity-soa-generator`).
 - A brand-new org will **not** be authorized for a namespace until it **claims**
   it. The UPM CLI can only *sign* a namespace the org already owns — it cannot
   *claim* one. To claim it, do a **one-time interactive sign in the Unity Editor**:
@@ -119,14 +112,14 @@ to sign package … with the provided credentials and organization`:
 
 ### 4. File the OpenUPM listing change
 
-If you publish via OpenUPM, OpenUPM's package listing for `YOUR_PACKAGE_ID` likely
+If you publish via OpenUPM, OpenUPM's package listing for `com.saesentsessis.unity-soa-generator` likely
 starts with `trackingMode: git`, which makes OpenUPM pack and serve unsigned
 tarballs from the repository's git tags. To make OpenUPM serve the signed tarball
 that the workflow now uploads, the listing must be flipped to
 `trackingMode: githubRelease`.
 
 The listing lives in the [openupm/openupm](https://github.com/openupm/openupm)
-repository at `data/packages/YOUR_PACKAGE_ID.yml`. Open a PR there changing:
+repository at `data/packages/com.saesentsessis.unity-soa-generator.yml`. Open a PR there changing:
 
 ```yaml
 trackingMode: git
@@ -148,7 +141,7 @@ the installer `.unitypackage`, and may add more assets later, so the prefix guar
 prevents a future-breaking failure mode):
 
 ```yaml
-githubReleaseAssetName: 'YOUR_PACKAGE_ID-'
+githubReleaseAssetName: 'com.saesentsessis.unity-soa-generator-'
 ```
 
 ## Verifying signing worked
@@ -156,7 +149,7 @@ githubReleaseAssetName: 'YOUR_PACKAGE_ID-'
 After the next release ships:
 
 1. Go to the release page for the new version and confirm a
-   `YOUR_PACKAGE_ID-<version>.tgz` asset is attached alongside the
+   `com.saesentsessis.unity-soa-generator-<version>.tgz` asset is attached alongside the
    `.unitypackage`. The single-step publish runs only after the signed tarball is
    built and verified, so a successful release run should always include the
    signed asset.
@@ -164,7 +157,7 @@ After the next release ships:
 
    ```bash
    curl -fsSL -o package.tgz \
-     https://github.com/IvanMurzak/YOUR_REPO/releases/download/<version>/YOUR_PACKAGE_ID-<version>.tgz
+     https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/<version>/com.saesentsessis.unity-soa-generator-<version>.tgz
    tar -tzf package.tgz | grep '\.attestation\.p7m$'
    # expected: package/.attestation.p7m
    ```

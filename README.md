@@ -1,174 +1,301 @@
-# [Unity Package Template](https://github.com/IvanMurzak/Unity-Package-Template)
+# [Unity HPC# SoA Source Generator](https://github.com/Saesentsessis/Unity-SoA-Generator)
 
-<img width="100%" alt="Stats" src="https://user-images.githubusercontent.com/9135028/198754538-4dd93fc6-7eb2-42ae-8ac6-d7361c39e6ef.gif"/>
+A high-performance C# Source Generator designed exclusively for Unity's Burst Compiler
+and Job System. It automatically transforms standard C# structs into purely unmanaged,
+tightly packed Structure of Arrays (SoA) containers.
 
-Unity Editor supports NPM packages. It is way more flexible solution in comparison with classic Plugin that Unity is using for years. NPM package supports versioning and dependencies. You may update / downgrade any package very easily. Also, Unity Editor has UPM (Unity Package Manager) that makes the process even simpler.
+Zero allocations. Zero GC pressure. 100% Burst compatible.
 
-This template repository is designed to be easily updated into a real Unity package. Please follow the instruction bellow, it will help you to go through the entire process of package creation, distribution and installing.
+## The Problem & The Solution
 
-# Steps to make your package
+In Data-Oriented Design (DOD), Array of Structs (AoS) layouts cause massive CPU
+cache-miss penalties during linear iteration because irrelevant data is pulled into
+the L1 cache. Structure of Arrays (SoA) solves this by separating fields into contiguous
+parallel arrays, maximizing the hardware prefetcher.
 
-### 1️⃣ Click the button - create repository
+Writing and maintaining SoA containers manually is tedious, error-prone, and destroys
+code readability.
 
-[![create new repository](https://user-images.githubusercontent.com/9135028/198753285-3d3c9601-0711-43c7-a8f2-d40ec42393a2.png)](https://github.com/IvanMurzak/Unity-Package-Template/generate)
+**This generator automates the entire process.** By simply tagging a struct with
+`[GenerateSoA]` attribute, the generator evaluates memory layout at compile time
+and emits a highly optimized, Burst-ready native container, that handles dynamic
+resizing, custom cache-line alignment, and unmanaged memory allocation.
 
-### 2️⃣ Clone your new repository
+## Core Features
 
-### 3️⃣ Initialize Project
+- **Burst-First Architecture:** Generated containers use raw pointers, `UnsafeUtils.MemCpy`,
+and mathematical bit-shifting. No managed arrays, no spans, no overhead.
+- **Dual-Block Vertical Bit-Packing:** Booleans are automatically stripped from the
+primitive data block and packed into 64-bit aligned native bit arrays at the tail of the
+allocation. Saves up to 87.5% of memory per boolean with zero multithreading race conditions.
+- **Deep Hierarchy Flattening:** Automatically decomposes nested structs, calculates
+their absolute byte offsets, and reconstructs them on the stack.
+- **Access Modifier Bypass:** Reconstructs structs containing private or readonly fields
+without requiring custom constructors or `partial` keyword.
+- **Job System Integration:** Natively implements `INativeDisposable` for seamless
+integration into `JobHandle` dependency chains.
+- **Safe Native Container:** Optionally generates a safe `NativeContainer` that replaces raw
+`*` pointers with `NativeArray<T>` and `NativeBitArray`, protected by Unity's safety checks. 
 
-Use the initialization script to rename the package and replace all placeholders.
+## Unity-SoA vs. Cysharp's SoA Generator
 
-```powershell
-./commands/init.ps1 -PackageId "com.company.package" -PackageName "My Package"
+Cysharp makes incredible tools, and their [StructureOfArraysGenerator](https://github.com/Cysharp/StructureOfArraysGenerator)
+is the gold standard for general .NET applications. However, standard .NET memory management
+is incompatible with Unity's High-Performance C# (HPC#) ecosystem.
+
+This generator is built explicitly from the ground up for **Unity.**
+
+| Feature                 | General .NET SoA               | This Generator                                  |
+|-------------------------|--------------------------------|-------------------------------------------------|
+| **Memory Allocation**   | Array Pooling/`Memory<T>`      | `AllocatorManager`(Temp, TempJob, Persistent)   |
+| **Burst Compatibility** | Limited(`Span` restrictions)   | 100% Native (Raw `void*` and `UnsafeUtility`)   |
+| **Boolean Packing**     | 1 byte per `bool`(87.5% waste) | **Dual-Block Bit Arrays** (Perfect density)     |
+| **Multithreading**      | Standard C# Threading          | Unity Job System Safety(`AtomicSafetyHandle`)   |
+| **Cache Alignment**     | CLR Default                    | Explicit Cache-Line padding                     |
+| **Disposal**            | Garbage Collected (GC)         | Native `Dispose(JobHandle)` dependency tracking |
+
+## Installation
+
+You can install this tool via the Unity Package Manager (UPM).
+
+1. Open Unity and navigate to Window > Package Manager.
+2. Click the + icon in the top left corner and select Add package from git URL...
+3. Enter the following URL: https://github.com/Saesentsessis/Unity-SoA-Generator.git
+4. Click Add.
+
+## Quick Start
+
+Define your standard data structure and decorate it with `[GenerateSoA]` attribute.
+
+```C#
+using Saesentsessis.DOD.SoA.CodeGen;
+using Unity.Mathematics;
+
+namespace Game.Simulation 
+{
+    [GenerateSoA(GenerateNativeContainer = true)]
+    public struct PointMass
+    {
+        public float3 Position;
+        public float3 PreviousPosition;
+        public float3 Velocity;
+        
+        public float InverseMass;
+        public ushort PhysicalMaterialIndex;
+        
+        public bool IsActive;
+        public bool IsPinned;
+    }
+}
 ```
 
-This script will:
-- Rename directories and files.
-- Replace `YOUR_PACKAGE_ID`, `YOUR_PACKAGE_NAME`, etc. in all files and folder names.
+Upon compilation, the generator automatically emits two files:
+1. `UnsafePointMassSoA.g.cs`: The core unmanaged memory container utilizing raw pointers
+(`float3* PositionPtr`, `UnsafeBitArray IsActiveBitArray`).
+2. `NativePointMassSoA.g.cs`: A safe, job-ready wrapper utilizing `NativeArray<T>` and
+`NativeBitArray`, protected by Unity's collection checks.
 
-### 4️⃣ Update `package.json`
-Open `Unity-Package/Assets/root/package.json` and update:
-- `description`
-- `author`
-- `keywords`
-- `unity` (minimum supported Unity version)
+## Usage Guide
 
-### 5️⃣ Generate Meta Files
+### Safe Usage(`Native Container`)
 
-#### Using script
-   Open Unity project to generate `.meta` files.
-   **On Mac and Linux**:
-   ```bash
-   ./commands/open-all-projects-unix.sh
-   ```
-   **On Windows**:
-   ```bash
-   ./commands/open-all-projects-windows.ps1
-   ```
-#### OR Manually
-   You may open the projects manually to achieve the same result.
-   - Open Unity Hub.
-   - Add the `Installer` folder as a project.
-   - Add the `Unity-Package` folder as a project.
-   - Open both projects in Unity Editor. This will generate the necessary `.meta` files.
+Use the generated `Native{Name}SoA` for safe, bounds-checked operations that integrate
+cleanly with Unity Jobs.
 
-### 6️⃣ Add files into `Unity-Package/Assets/root` folder
+```C#
+using Unity.Collections;
+using Unity.Jobs;
 
-[Unity guidelines](https://docs.unity3d.com/Manual/cus-layout.html) about organizing files into the package root directory
+// Allocate the safe container using a standard Unity allocator.
+var pointMasses = new NativePointMassSoA(10_000, Allocator.TempJob);
 
-```text
-  <root>
-  ├── package.json
-  ├── README.md
-  ├── CHANGELOG.md
-  ├── LICENSE.md
-  ├── Third Party Notices.md
-  ├── Editor
-  │   ├── [company-name].[package-name].Editor.asmdef
-  │   └── EditorExample.cs
-  ├── Runtime
-  │   ├── [company-name].[package-name].asmdef
-  │   └── RuntimeExample.cs
-  ├── Tests
-  │   ├── Editor
-  │   │   ├── [company-name].[package-name].Editor.Tests.asmdef
-  │   │   └── EditorExampleTest.cs
-  │   └── Runtime
-  │        ├── [company-name].[package-name].Tests.asmdef
-  │        └── RuntimeExampleTest.cs
-  ├── Samples~
-  │        ├── SampleFolder1
-  │        ├── SampleFolder2
-  │        └── ...
-  └── Documentation~
-       └── [package-name].md
+// Add data (capacity expands automatically like NativeList)
+pointMasses.SetCapacity(50_000);
+
+// Booleans are exposed as Unity NativeBitArray's
+bool isPinned = pointMasses.IsPinnedBitArray.IsSet(0);
+
+// Pass parameters directly inside a job as NativeArray<T>'s
+GravityJob addGravityJob = new GravityJob 
+{
+    Velocities = pointMasses.Velocity,
+    Gravity = new float3(0f, -9.81f, 0f)
+};
+
+// Schedule the job as normal
+JobHandle physicsDeps = addGravityJob.Schedule();
+
+// Dispose and attach to JobHandle dependencies
+physicsDeps = pointMasses.Dispose(physicsDeps);
 ```
 
-# Optional steps
+### Advanced Usage (Raw Pointers)
 
-### 1. Version Management
+Use the generated `Unsafe{Name}SoA` for maximum performance and direct pointer manipulation
+inside Burst-compiled code.
 
-To update the package version across all files (package.json, Installer.cs, etc.), use the bump version script:
+```C#
+using Unity.Collections;
+using Unity.Jobs;
 
-```powershell
-.\commands\bump-version.ps1 -NewVersion "1.0.1"
+// Allocate the unsafe container
+var pointMasses = new UnsafePointMassSoA(10_000, Allocator.Temp);
+pointMasses.SetCapacity(50_000);
+
+// Access raw, contiguous pointer arrays directly inside Burst code
+unsafe
+{
+    float3* velocityPtr = pointMasses.VelocityPtr;
+    float3* velocityEndPtr = velocityPtr + pointMasses.Capacity;
+    float3 gravity = new float3(0f, -9.81f, 0f);
+    
+    while (velocityPtr < velocityEndPtr)
+        *velocityPtr++ += gravity;
+}
+
+// Booleans are exposed as Unity native UnsafeBitArrays
+bool isPinned = pointMasses.IsPinnedBitArray.IsSet(0);
+
+// Don't forget to free memory when your're done using it.
+pointMasses.Dispose();
 ```
 
-### 2. Setup CI/CD
+## Technical Deep Dive
 
-To enable automatic testing and deployment:
+Understanding how generator manipulates memory is crucial for writing high-performance
+code. Here is what happens under the hood.
 
-1.  **Configure GitHub Secrets**
-    Go to `Settings` > `Secrets and variables` > `Actions` > `New repository secret` and add:
-    -   `UNITY_EMAIL`: Your Unity account email.
-    -   `UNITY_PASSWORD`: Your Unity account password.
-    -   `UNITY_LICENSE`: Content of your `Unity_lic.ulf` file.
-        -   Windows: `C:/ProgramData/Unity/Unity_lic.ulf`
-        -   Mac: `/Library/Application Support/Unity/Unity_lic.ulf`
-        -   Linux: `~/.local/share/unity3d/Unity/Unity_lic.ulf`
+### 1. Dual-Block Memory Architecture
+When `allowBooleandBitPacking` is enabled, the generator abandons standard linear memory
+packing. A single `bool` consumes 1 byte in C#, meaning 87.5% of cache line is wasted.
 
-    **Package signing secrets (Unity 6.3+ signed packages)**
+To solve this without introducing memory race conditions between threads, the generator
+splits the unmanaged allocation into two distinct blocks:
 
-    Starting with Unity 6.3, Package Manager warns about unsigned packages. The release workflow signs your package via Unity's UPM CLI, and **signing is a hard gate** — if these secrets are missing or misconfigured, the release fails and no GitHub Release is created. Add three more repository secrets (`Settings > Secrets and variables > Actions`):
+1. **The Primitive Block:** Contains all standard, tightly packed, data types
+(`float3`, `int`, etc.).
+2. **The Bit-Array Block:** Padded to the nearest 8-byte boundary, this block packs
+booleans consecutively.
 
-    -   `UPM_ORG_ID` — your Unity **organization ID**.
-    -   `UPM_SERVICE_ACCOUNT_KEY_ID` — a Unity Cloud **service-account key ID**.
-    -   `UPM_SERVICE_ACCOUNT_KEY_SECRET` — the matching **service-account key secret** (shown only once).
+If JobA writes to `IsActive` bit array and JobB writes to `IsPinned` for the same entity
+concurrently, **they will not race**, because the generator maps them to entirely separate
+virtual `UnsafeBitArray` memory slices within the tail block.
 
-    How to obtain them (in the [Unity Cloud Dashboard](https://cloud.unity.com/)):
+### 2. The Stack-Pointer Bypass (AST Flattening)
 
-    1.  Pick the **organization** that will own/sign your package (Unity Cloud → Organizations → note its **Organization ID** → that's `UPM_ORG_ID`).
-    2.  **Administration → Service Accounts → Create service account.** In its **Keys** section, **Create key** → record the **Key ID** (`UPM_SERVICE_ACCOUNT_KEY_ID`) and **Secret key** (`UPM_SERVICE_ACCOUNT_KEY_SECRET`) — the secret is shown only once.
-    3.  Give the service account the **"Package Manager Package Signer"** role for that organization.
+If your struct contains nested structs or `private` fields, traditional SoA generators
+require you to write mapping constructors or mark the struct as `partial`.
 
-    **Critical — three things must line up, or signing fails with "User does not have permission to sign package … with the provided credentials and organization":**
+This generator builds an internal **Abstract Syntax Tree (AST)** of your struct's memory
+layout at compile-time, matching the CLR's exact alignment rules. When you call
+`GetPointMass(index)` accessor, it bypasses access modifiers entirely:
 
-    -   The **service account must belong to the same organization** as `UPM_ORG_ID`.
-    -   That **organization must be authorized to sign your package's namespace** (the reverse-domain name in `package.json`, e.g. `com.company.package`).
-    -   A brand-new org won't be authorized for a namespace until it **claims** it. To claim it, do a **one-time interactive sign in the Unity Editor**: Package Manager → select your package → Export → in the **Authoring Org** dropdown pick that organization → sign. After that one interactive sign, the CI service account can sign the same package automatically.
+```C#
+// Example of generated accessor code
+[MethodImpl(MethodImplOptions.AggressiveInlining)]
+public PointMass GetPointMass(int index)
+{
+    PointMass result = default;
+    byte* resultPtr = (byte*)&result;
 
-    > Tip: the Unity UPM CLI can only *sign* a namespace the org already owns — it cannot *claim* one. The interactive Editor sign above is the only way to establish the association.
+    // Writes directly to the stack-allocated memory via calculated byte offsets
+    *(float3*)resultPtr = PositionPtr[index];
+    *(float3*)(resultPtr + 12) = PreviousPositionPtr[index];
+    *(float3*)(resultPtr + 24) = VelocityPtr[index];
+    *(float*)(resultPtr + 36) = InverseMassPtr[index];
+    *(ushort*)(resultPtr + 40) = PhysicalMaterialIndexPtr[index];
+    
+    // Bit arrays are evaluated and cast directly into the stack struct
+    *(bool*)(resultPtr + 42) = IsActiveBitArray.IsSet(index);
+    *(bool*)(resultPtr + 43) = IsPinnedBitArray.IsSet(index);
 
-    See [`docs/openupm-signing.md`](docs/openupm-signing.md) for the full setup, verification, and troubleshooting guide.
+    return result;
+}
+```
 
-2.  **Enable Workflows**
-    Rename the sample workflow files to enable them:
-    -   `.github/workflows/release.yml-sample` ➡️ `.github/workflows/release.yml`
-    -   `.github/workflows/test_pull_request.yml-sample` ➡️ `.github/workflows/test_pull_request.yml`
+Because the result struct is instantly overwritten, Burst optimizes away the `default`
+initialization entirely. The result is pure CPU register moves.
 
-3.  **Update Unity Version**
-    Open both `.yml` files and update the `UNITY_VERSION` (or similar variable) to match your project's Unity Editor version.
+### 3. Allocation Limits
 
-4.  **Automatic Deployment**
-    The release workflow triggers automatically when you push to the `main` branch with an incremented version in `package.json`.
+Due to how the generator intercepts Unity's `AllocatorManager`, bit-packed containers
+safely bypass standard element-size multiplication constraints.
+- Containers consisting **only of primitives** can exceed the 2GB memory address space limit
+safely.
+- Containers utilizing **bit-packing** enforce a strict 2GB overall allocation limit via a
+`CheckByteSizeInRange` guard to prevent integer overflow during block size calculations.
 
-# Final polishing
+## API & Configuration
 
-- Update the `README.md` file (this file) with information about your package.
-- Copy the updated `README.md` to `Assets/root` as well.
+### `[GenerateSoA]`
 
-> ⚠️ Everything outside of the `root` folder won't be added to your package. But still could be used for testing or showcasing your package at your repository.
+The primary attribute used to mark a struct for SoA generation. It exposes a several
+configuration parameters to dictate the underlying memory architecture.
+- `allowFieldHierarchyFlattening` _(default: true)_<br>
+If set to `true`, the generator recursively decomposes nested structs whose size-to-alignment
+ratio would introduce padding. This guarantees 100% memory density by replacing the nested
+struct's single array accessor with separate, parallel arrays for each constituent primitive
+field.
+- `allowBooleanBitPacking` _(default: true)_<br>
+Transforms `bool` fields into a separate vertically packed bit array block, located after
+all primitive fields. This may introduce a slight padding gap to align the bit block to
+an 8-byte boundary, but eliminates per-boolean byte waste.
+- `StructName` _(default: null)_<br>
+Overrides the generated struct identifier. If null, defaults to `Unsafe{TargetName}SoA`,
+`Native{TargetName}SoA`.
+- `StructNamespace` _(default: null)_<br>
+Overrides the target namespace. If null, generates into the exact same namespace as the
+target struct.
+- `GenerateNativeContainer` _(default: false)_<br>
+Instructs the generator to emit the safe `[NativeContainer]` wrapper structure alongside
+the internal unsafe implementation.
 
-### 1. Deploy to any registry you like
+### `[GenerateSoAUniformAccessor]`
 
-- [Deploy to OpenUPM](https://github.com/IvanMurzak/Unity-Package-Template/blob/main/Docs/Deploy-OpenUPM.md) (recommended)
-- [Deploy using GitHub](https://github.com/IvanMurzak/Unity-Package-Template/blob/main/Docs/Deploy-GitHub.md)
-- [Deploy to npmjs.com](https://github.com/IvanMurzak/Unity-Package-Template/blob/main/Docs/Deploy-npmjs.md)
+When applied to a nested struct field inside a generated SoA container, this attribute
+instructs the generator to create a convenience getter method that reconstructs the target
+struct on-the-fly for a given index.
 
-### 2. Install your package into Unity Project
+> Note, that accessors are only generated if the structure was flattened.
 
-When your package is distributed, you can install it into any Unity project.
+```C#
+[StructLayout(LayoutKind.Sequential)]
+public struct TransformData { public float X; public short Y; }
 
-> Don't install into the same Unity project, please use another one.
+[GenerateSoA]
+public struct SimulationData
+{
+    [GenerateSoAUniformAccessor]
+    public TransformData Transform;
+}
+```
 
-- [Install OpenUPM-CLI](https://github.com/openupm/openupm-cli#installation)
-- Open a command line at the root of Unity project (the folder which contains `Assets`)
-- Execute the command (for `OpenUPM` hosted package)
+This generates `public TransformData GetTransform(int index)` inside the SoA container.
 
-  ```bash
-  openupm add YOUR_PACKAGE_NAME
-  ```
+> ⚠️**Performance Warning:** If the target struct was flattened due to alignment optimization
+> (`allowFieldHierarchyFlattening = true`), accessing this property requires fetching data
+> from multiple disjoint parallel arrays. This breaks cache locality and will incur multiple
+> CPU cache line fetches, degrading performance compared to direct, per-field array iteration.
+> Use strictly for convenience outside of hot loops.
 
-# Final view in Unity Package Manager
+## Generated API Surface
 
-![image](https://user-images.githubusercontent.com/9135028/198777922-fdb71949-aee7-49c8-800f-7db885de9453.png)
+The generated `Unsafe{Name}SoA` container implements `IStructureOfArrays`, `IDisposable`,
+and `INativeDisposable`. Its primary API includes:
+
+- `public void* DataPtr { get; }`: Dense storage pointer for the entire SoA block.
+- `public int Capacity { get; set; }`: Adjusts the total element capacity, handling internal
+buffer reallocation (`UnsafeUtility.MemCpy`) automatically.
+- `public long ByteSize { get; }`: Returns the total allocated memory footprint in bytes.
+- **Field Accessors:** Generates strongly-typed pointers for each standard field (e.g.,
+`public float3* VelocityPtr { get; }`).
+- **Flag Accessors:** If bit-packing is enabled, generates block-aligned `UnsafeBitArray`
+properties for each boolean field.
+
+If `GenerateNativeContainer = true` is specified, the `Native{Name}SoA` container mirrors
+this API but replaces raw pointers with `NativeArray<T>` and `NativeBitArray`, integrating
+directly with `AtomicSafetyHandle` for deterministic race-condition detection in Job System.
+
+## License
+
+Licensed under the [MIT License](LICENSE).

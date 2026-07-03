@@ -28,7 +28,7 @@ When your package is distributed, you can install it into any Unity project.
 - Run the command
 
   ```bash
-  openupm add YOUR_PACKAGE_NAME
+  openupm add com.saesentsessis.unity-soa-generator
   ```
 
 ### Alternative manual installation

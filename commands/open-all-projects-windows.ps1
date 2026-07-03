@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Opens all Unity projects in the repository using Unity Editor.
@@ -7,7 +7,7 @@
     Launches Unity Editor for each project by reading the required version
     from ProjectSettings/ProjectVersion.txt:
     - Installer
-    - Unity-Package
+    - Unity-SoA-Generator
     - Unity-Tests/2022.3.62f3
     - Unity-Tests/2023.2.22f1
     - Unity-Tests/6000.3.1f1
@@ -71,7 +71,7 @@ if (-not $EditorsPath -or -not (Test-Path $EditorsPath)) {
 # Define projects to open
 $Projects = @(
     "Installer",
-    "Unity-Package",
+    "Unity-SoA-Generator",
     "Unity-Tests/2022.3.62f3",
     "Unity-Tests/2023.2.22f1",
     "Unity-Tests/6000.3.1f1"
