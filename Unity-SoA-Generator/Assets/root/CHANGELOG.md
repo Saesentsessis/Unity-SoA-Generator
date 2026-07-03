@@ -9,3 +9,4 @@
   - Generation of accessor methods to retrieve flattened entries.
   - Boolean field bit-packing to reduce memory consumption up to 87,5%.
 - Included documentation and example usage.
+- Editor window to preview generated SoA information.
