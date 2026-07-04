@@ -2,8 +2,8 @@
     <h1>Unity HPC# SoA Source Generator</h1>
 
 [![OpenUPM](https://img.shields.io/npm/v/com.saesentsessis.unity-soa-generator?label=OpenUPM&registry_uri=https://package.openupm.com&labelColor=333A41 'OpenUPM package')](https://openupm.com/packages/com.saesentsessis.unity-soa-generator/)
-[![Unity Editor](https://img.shields.io/badge/Editor-2022.3?style=flat&logo=unity&labelColor=333A41&color=2A2A2A 'Unity Editor supported')](https://unity.com/releases/editor/archive)
-[![Unity Runtime](https://img.shields.io/badge/Runtime-2022.3?style=flat&logo=unity&labelColor=333A41&color=2A2A2A 'Unity Runtime supported')](https://unity.com/releases/editor/archive)
+[![Unity Editor](https://img.shields.io/badge/Editor-X?style=flat&logo=unity&labelColor=333A41&color=2A2A2A 'Unity Editor supported')](https://unity.com/releases/editor/archive)
+[![Unity Runtime](https://img.shields.io/badge/Runtime-X?style=flat&logo=unity&labelColor=333A41&color=2A2A2A 'Unity Runtime supported')](https://unity.com/releases/editor/archive)
 [![Tests Passed](https://github.com/Saesentsessis/Unity-SoA-Generator/actions/workflows/release.yml/badge.svg 'Tests Passed')](https://github.com/Saesentsessis/Unity-SoA-Generator/actions/workflows/release.yml)<br/>
 [![Releases](https://img.shields.io/github/release/Saesentsessis/Unity-SoA-Generator.svg)](https://github.com/Saesentsessis/Unity-SoA-Generator/releases)
 [![Stars](https://img.shields.io/github/stars/Saesentsessis/Unity-SoA-Generator 'Stars')](https://github.com/Saesentsessis/Unity-SoA-Generator/stargazers)
