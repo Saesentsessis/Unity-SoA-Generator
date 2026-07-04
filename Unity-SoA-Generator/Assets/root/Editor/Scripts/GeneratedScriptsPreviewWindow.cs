@@ -18,7 +18,7 @@ namespace Saesentsessis.DOD.SoA.Editor
         private static readonly Color NativeExistsColor = new Color(0.40f, 0.85f, 0.40f);
         private static readonly Color NativeMissingColor = new Color(0.90f, 0.40f, 0.40f);
 
-        // Bullseye glyph reads as "ping / locate" for the header Select button.
+        // Folder glyph for the header Select button.
         private static readonly GUIContent SelectButtonContent = new GUIContent("\U0001F4C1", "Ping the script declaring this struct");
 
         // Layout metrics.
@@ -130,7 +130,7 @@ namespace Saesentsessis.DOD.SoA.Editor
 
                 var unsafeName = "Unsafe" + finalName;
                 var nativeName = "Native" + finalName;
-
+                
                 var unsafeFullName = string.IsNullOrEmpty(containerNamespace)
                     ? unsafeName
                     : containerNamespace + "." + unsafeName;
@@ -274,12 +274,16 @@ namespace Saesentsessis.DOD.SoA.Editor
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 var script = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
+                
                 if (script == null)
                     continue;
 
                 var text = script.text;
-                if (string.IsNullOrEmpty(text) == false && declarationPattern.IsMatch(text))
-                    return script;
+                
+                if (string.IsNullOrEmpty(text) || declarationPattern.IsMatch(text) == false)
+                    continue;
+                
+                return script;
             }
 
             return null;
@@ -288,9 +292,11 @@ namespace Saesentsessis.DOD.SoA.Editor
         private void RecalculateBadgeWidths()
         {
             var style = EditorStyles.miniLabel;
+            
             foreach (var entry in _entries)
             {
                 var badges = entry.Badges;
+                
                 for (int i = 0; i < badges.Length; i++)
                 {
                     _measureContent.text = badges[i].Text;
@@ -354,7 +360,7 @@ namespace Saesentsessis.DOD.SoA.Editor
 
             var fieldRect = new Rect(x, 1f, CapacityFieldWidth, toolbarHeight - 2f);
             EditorGUI.BeginChangeCheck();
-            var newCapacity = EditorGUI.IntField(fieldRect, _sampleCapacity, EditorStyles.toolbarTextField);
+            var newCapacity = EditorGUI.DelayedIntField(fieldRect, _sampleCapacity, EditorStyles.toolbarTextField);
             if (EditorGUI.EndChangeCheck())
             {
                 _sampleCapacity = Mathf.Max(1, newCapacity);

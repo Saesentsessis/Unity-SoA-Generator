@@ -1,4 +1,15 @@
-# [Unity HPC# SoA Source Generator](https://github.com/Saesentsessis/Unity-SoA-Generator)
+<div align="center">
+    <h1>Unity HPC# SoA Source Generator</h1>
+
+[![OpenUPM](https://img.shields.io/npm/v/com.saesentsessis.unity-soa-generator?label=OpenUPM&registry_uri=https://package.openupm.com&labelColor=333A41 'OpenUPM package')](https://openupm.com/packages/com.saesentsessis.unity-soa-generator/)
+[![Unity Editor](https://img.shields.io/badge/Editor-2022.3?style=flat&logo=unity&labelColor=333A41&color=2A2A2A 'Unity Editor supported')](https://unity.com/releases/editor/archive)
+[![Unity Runtime](https://img.shields.io/badge/Runtime-2022.3?style=flat&logo=unity&labelColor=333A41&color=2A2A2A 'Unity Runtime supported')](https://unity.com/releases/editor/archive)
+[![Tests Passed](https://github.com/Saesentsessis/Unity-SoA-Generator/actions/workflows/release.yml/badge.svg 'Tests Passed')](https://github.com/Saesentsessis/Unity-SoA-Generator/actions/workflows/release.yml)<br/>
+[![Releases](https://img.shields.io/github/release/Saesentsessis/Unity-SoA-Generator.svg)](https://github.com/Saesentsessis/Unity-SoA-Generator/releases)
+[![Stars](https://img.shields.io/github/stars/Saesentsessis/Unity-SoA-Generator 'Stars')](https://github.com/Saesentsessis/Unity-SoA-Generator/stargazers)
+[![License](https://img.shields.io/github/license/Saesentsessis/Unity-SoA-Generator?label=License&labelColor=333A41)](https://github.com/Saesentsessis/Unity-SoA-Generator/blob/main/LICENSE)
+
+</div>
 
 A high-performance C# Source Generator designed exclusively for Unity's Burst Compiler
 and Job System. It automatically transforms standard C# structs into purely unmanaged,
@@ -35,7 +46,7 @@ without requiring custom constructors or `partial` keyword.
 - **Job System Integration:** Natively implements `INativeDisposable` for seamless
 integration into `JobHandle` dependency chains.
 - **Safe Native Container:** Optionally generates a safe `NativeContainer` that replaces raw
-`*` pointers with `NativeArray<T>` and `NativeBitArray`, protected by Unity's safety checks. 
+`*` pointers with `NativeArray<T>` and `NativeBitArray`, protected by Unity's safety checks.
 
 ## Unity-SoA vs. Cysharp's SoA Generator
 
@@ -56,7 +67,7 @@ This generator is built explicitly from the ground up for **Unity.**
 
 ## Requirements
 
-- Unity **2021.3** or newer
+- Unity **2022.3** or newer
 - [`com.saesentsessis.unity-collections-specialized`](https://github.com/Saesentsessis/Unity-Collections-Specialized) **0.1.1** or newer
 - [`com.unity.collections`](https://docs.unity3d.com/Packages/com.unity.collections@latest) **2.1.4** or newer
 - [`com.unity.burst`](https://docs.unity3d.com/Packages/com.unity.burst@latest) **1.8.0** or newer
@@ -68,7 +79,7 @@ This generator is built explicitly from the ground up for **Unity.**
 You can install this package via the [OpenUPM](https://openupm.com/) CLI:
 
 ```bash
-openupm add com.saesentsessis.unity-collections-specialized
+openupm add com.saesentsessis.unity-soa-generator
 ```
 
 Or manually add the scoped registry to your `Packages/manifest.json`:
@@ -77,6 +88,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 {
   "dependencies": {
     "com.saesentsessis.unity-collections-specialized": "0.1.1",
+    "com.saesentsessis.unity-soa-generator": "1.0.0"
   },
   "scopedRegistries": [
     {
@@ -93,7 +105,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 ### Method 2: Unity package installer
 
 1. Download the latest `.unitypackage` from [GitHub Releases page](https://github.com/Saesentsessis/Unity-SoA-Generator/releases).
-   - _Direct Link:_ [Unity-Collections-Specialized-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.0/Unity-SoA-Generator-Installer.unitypackage)
+   - _Direct Link:_ [Unity-SoA-Generator-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.0/Unity-SoA-Generator-Installer.unitypackage)
 2. Import the downloaded package into your Unity project.
 3. The installer will automatically configure OpenUPM in your `manifest.json` file and install the package dependencies.
 
@@ -101,15 +113,15 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 
 1. Open Unity and navigate to `Window` > `Package Manager`.
 2. Click on the `+` icon in the top left corner and select `Add package from git URL...`.
-3. Enter the following URL:
-```
-https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root
-```
+3. Enter the following URL (dependent repository):
+   ```
+   https://github.com/Saesentsessis/Unity-Collections-Specialized.git?path=Unity-Collections-Specialized/Assets/root
+   ```
 4. Click Add.
-5. Repeat all steps for the dependent repository:
-```
-https://github.com/Saesentsessis/Unity-Collections-Specialized.git?path=Unity-Collections-Specialized/Assets/root
-```
+5. Repeat all steps for the actual repository:
+   ```
+   https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root
+   ```
 
 You can specify exact release version of this package like this:
 
@@ -310,7 +322,8 @@ When applied to a nested struct field inside a generated SoA container, this att
 instructs the generator to create a convenience getter method that reconstructs the target
 struct on-the-fly for a given index.
 
-> Note, that accessors are only generated if the structure was flattened.
+> [!NOTE]
+> Accessors are only generated if the structure was flattened.
 
 ```C#
 [StructLayout(LayoutKind.Sequential)]
@@ -326,7 +339,8 @@ public struct SimulationData
 
 This generates `public TransformData GetTransform(int index)` inside the SoA container.
 
-> ⚠️**Performance Warning:** If the target struct was flattened due to alignment optimization
+> [!WARNING]
+> If the target struct was flattened due to alignment optimization
 > (`allowFieldHierarchyFlattening = true`), accessing this property requires fetching data
 > from multiple disjoint parallel arrays. This breaks cache locality and will incur multiple
 > CPU cache line fetches, degrading performance compared to direct, per-field array iteration.
