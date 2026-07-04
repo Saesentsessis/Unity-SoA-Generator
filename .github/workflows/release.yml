@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  checks: write
+
 env:
   INSTALLER_UNITY_VERSION: 6000.3.16f1
 
@@ -31,6 +35,10 @@ jobs:
 
       - name: Find previous version tag
         id: prev_tag
+        # On the very first release there is no prior tag; this action errors in
+        # that case, so allow it to fail soft. Downstream steps handle an empty
+        # prev_tag (they skip the "Comparison" / commit-summary sections).
+        continue-on-error: true
         uses: WyriHaximus/github-action-get-previous-tag@v1
 
       - name: Check if tag exists
@@ -161,7 +169,7 @@ jobs:
           customImage: "unityci/editor:ubuntu-${{ env.INSTALLER_UNITY_VERSION }}-base-3"
           buildName: Unity-SoA-Generator-Installer
           buildsPath: build
-          buildMethod: com.saesentsessis.unity-soa-generator.Installer.PackageExporter.ExportPackage
+          buildMethod: Saesentsessis.DOD.SoA.Generator.Installer.PackageExporter.ExportPackage
           customParameters: -CI true -GITHUB_ACTIONS true
 
       - name: Upload Unity Package as artifact
