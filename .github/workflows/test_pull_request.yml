@@ -7,9 +7,8 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-    contents: read
-    checks: write
-    pull-requests: write
+  contents: read
+  checks: write
 
 jobs:
   # --- EDIT MODE ---
