@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  checks: write
+
 env:
   INSTALLER_UNITY_VERSION: 6000.3.16f1
 
