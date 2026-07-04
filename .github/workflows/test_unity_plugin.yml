@@ -32,9 +32,9 @@ jobs:
     name: ${{ inputs.unityVersion }} ${{ inputs.testMode }} on ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
 
-    # permissions: # minimize the default token
-    #   contents: write
-    #   pull-requests: write
+    permissions: # minimize the default token
+      contents: write
+      pull-requests: write
 
     steps:
       # --------------------------------------------------------------------- #
