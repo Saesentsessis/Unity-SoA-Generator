@@ -1,0 +1,25 @@
+﻿{
+    "name": "com.saesentsessis.unity-soa-generator",
+    "displayName": "Unity SoA Generator",
+    "author": {
+        "name": "Saesentsessis",
+        "url": "https://github.com/Saesentsessis"
+    },
+    "keywords": [
+        "Structure of Arrays",
+        "SoA",
+        "Codegen",
+        "Code Generation",
+        "Roslyn",
+        "Low Level",
+        "HPC#"
+    ],
+    "version": "1.0.0",
+    "unity": "2022.3",
+    "description": "This package provides light weight Structure of Arrays(SoA) generator.\\nAll SoA's are Burst compatible out of the box.\\n\\nExtra features:\\n- (Optional) Nested struct flattening to remove any memory paddings providing zero wasted memory.\\n- (Optional) Generation of accessor methods to retrieve flattened entries.\\n- (Optional) Boolean field bit-packing to reduce memory consumption up to 87,5%.",
+    "dependencies": {
+        "com.unity.collections": "2.1.4",
+        "com.unity.burst": "1.8.0",
+        "com.saesentsessis.unity-collections-specialized": "0.1.1"
+    }
+}

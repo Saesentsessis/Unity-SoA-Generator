@@ -1,2 +1,39 @@
-# Claude
-.claude
+# IDE and editor tooling
+.idea/
+.vs/
+*.user
+*.userprefs
+*.suo
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# AI assistant local config
+.claude/
+
+# Unity generated (any project in this repo)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+kernelsCache/
+packages-lock.json
+
+# Unity build artifacts
+*.apk
+*.unitypackage
+
+# Visual Studio / IDE generated
+*.csproj
+*.sln
+*.slnx
+
+# Secrets and local environment
+.env
+.env.*

@@ -32,9 +32,11 @@ jobs:
     name: ${{ inputs.unityVersion }} ${{ inputs.testMode }} on ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
 
-    # permissions: # minimize the default token
-    #   contents: write
-    #   pull-requests: write
+    # game-ci/unity-test-runner publishes results as a Check Run via githubToken,
+    # which requires checks:write. Bounded by the caller's granted permissions.
+    permissions:
+      contents: read
+      checks: write
 
     steps:
       # --------------------------------------------------------------------- #
