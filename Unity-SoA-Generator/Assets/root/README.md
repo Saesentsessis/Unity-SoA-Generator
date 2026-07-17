@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
     <h1>Unity HPC# SoA Source Generator</h1>
 
 [![OpenUPM](https://img.shields.io/npm/v/com.saesentsessis.unity-soa-generator?label=OpenUPM&registry_uri=https://package.openupm.com&labelColor=333A41 'OpenUPM package')](https://openupm.com/packages/com.saesentsessis.unity-soa-generator/)
@@ -68,7 +68,7 @@ This generator is built explicitly from the ground up for **Unity.**
 ## Requirements
 
 - Unity **2022.3** or newer
-- [`com.saesentsessis.unity-collections-specialized`](https://github.com/Saesentsessis/Unity-Collections-Specialized) **0.1.1** or newer
+- [`com.saesentsessis.unity-collections-specialized`](https://github.com/Saesentsessis/Unity-Collections-Specialized) **0.2.0** or newer
 - [`com.unity.collections`](https://docs.unity3d.com/Packages/com.unity.collections@latest) **2.1.4** or newer
 - [`com.unity.burst`](https://docs.unity3d.com/Packages/com.unity.burst@latest) **1.8.0** or newer
 
@@ -87,8 +87,8 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.saesentsessis.unity-collections-specialized": "0.1.1",
-    "com.saesentsessis.unity-soa-generator": "1.0.0"
+    "com.saesentsessis.unity-collections-specialized": "0.2.0",
+    "com.saesentsessis.unity-soa-generator": "1.0.1"
   },
   "scopedRegistries": [
     {
@@ -105,7 +105,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 ### Method 2: Unity package installer
 
 1. Download the latest `.unitypackage` from [GitHub Releases page](https://github.com/Saesentsessis/Unity-SoA-Generator/releases).
-   - _Direct Link:_ [Unity-SoA-Generator-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.0/Unity-SoA-Generator-Installer.unitypackage)
+   - _Direct Link:_ [Unity-SoA-Generator-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.1/Unity-SoA-Generator-Installer.unitypackage)
 2. Import the downloaded package into your Unity project.
 3. The installer will automatically configure OpenUPM in your `manifest.json` file and install the package dependencies.
 
@@ -126,7 +126,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 You can specify exact release version of this package like this:
 
 ```
-https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root#1.0.0
+https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root#1.0.1
 ```
 
 ## Quick Start
