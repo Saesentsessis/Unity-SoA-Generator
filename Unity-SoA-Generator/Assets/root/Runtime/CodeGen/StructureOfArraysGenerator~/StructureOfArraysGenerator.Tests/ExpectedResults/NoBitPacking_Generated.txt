@@ -27,7 +27,7 @@ public unsafe partial struct UnsafeStandardBoolDataSoA : IStructureOfArrays,
 	public const int ElementSize = 5;
 	public const int PaddingPerElement = 0;
 	public const int FlagCount = 0;
-	private const int Alignment = 4;
+	public const int Alignment = 4;
 	private const int IsActiveByteOffset = 4;
 
 	[NativeDisableUnsafePtrRestriction]
@@ -252,6 +252,50 @@ public unsafe partial struct UnsafeStandardBoolDataSoA : IStructureOfArrays,
 		_capacity = 0;
 
 		return inputDeps;
+	}
+
+	/// <summary>
+	/// The number of bytes a buffer must span to back a container of the given capacity.
+	/// </summary>
+	/// <param name="capacity">The capacity the buffer is laid out for.</param>
+	/// <returns>The required size of the data block in bytes.</returns>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static long GetRequiredByteSize(int capacity)
+	{
+		return Bitwise.ComputeByteSize(ElementSize, capacity, FlagCount);
+	}
+
+	/// <summary>
+	/// Reinterprets an existing buffer as a UnsafeStandardBoolDataSoA without copying.
+	/// </summary>
+	/// <param name="dataPtr">
+	/// Base address of a buffer already laid out for exactly the given capacity. It must span at
+	/// least GetRequiredByteSize(capacity) bytes and be aligned to the Alignment constant.
+	/// </param>
+	/// <param name="capacity">
+	/// The capacity the buffer was laid out for. This is the stride of every field array rather
+	/// than a bounds hint, so a mismatch silently misaligns every array past the first.
+	/// </param>
+	/// <param name="allocator">
+	/// Allocator.None to create a non-owning view, in which case Dispose leaves the buffer alone.
+	/// Any deallocating handle transfers ownership of the buffer to the returned container.
+	/// </param>
+	/// <returns>A UnsafeStandardBoolDataSoA aliasing the supplied buffer.</returns>
+	/// <remarks>
+	/// A container created over a non-owning allocator must be treated as fixed capacity, since
+	/// SetCapacity reallocates through the allocator it was handed.
+	/// </remarks>
+	public static UnsafeStandardBoolDataSoA ConvertExistingDataToSoA(void* dataPtr, int capacity,
+		AllocatorManager.AllocatorHandle allocator)
+	{
+		SoAUnsafeUtility.CheckConvertArguments(dataPtr, capacity, ElementSize, FlagCount, Alignment, MaxCapacity);
+
+		UnsafeStandardBoolDataSoA result = default;
+		result._dataPtr = dataPtr;
+		result._capacity = capacity;
+		result._allocator = allocator;
+
+		return result;
 	}
 
 	internal static UnsafeStandardBoolDataSoA* Create<U>(int initialCapacity, ref U allocator, NativeArrayOptions options)

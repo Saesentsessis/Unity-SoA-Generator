@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -535,5 +536,243 @@ namespace Saesentsessis.DOD.SoA.Tests
             _container.IdPtr[0] = 42;
             Assert.AreEqual(42, _container.IdPtr[0]);
         }
+    }
+
+    /// <summary>
+    /// Covers reinterpretation of externally owned memory as a generated SoA container
+    /// via the static ConvertExistingDataToSoA factory.
+    /// </summary>
+    public unsafe class UnsafeSoAConversionTests
+    {
+        private const int Capacity = 128;
+
+        private AllocatorManager.AllocatorHandle _allocator;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _allocator = Allocator.Persistent;
+        }
+
+        private void* Allocate(long byteSize, int alignment)
+        {
+            return _allocator.Allocate((int)byteSize, alignment, 1);
+        }
+
+        private void Free(void* buffer)
+        {
+            AllocatorManager.Free(_allocator, buffer);
+        }
+
+        [Test]
+        public void ConvertExistingData_SetsCapacityAllocatorAndPointer()
+        {
+            void* buffer = Allocate(UnsafeSimpleEntitySoA.GetRequiredByteSize(Capacity), UnsafeSimpleEntitySoA.Alignment);
+
+            try
+            {
+                var view = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(buffer, Capacity, Allocator.None);
+
+                Assert.IsTrue(view.IsCreated);
+                Assert.AreEqual(Capacity, view.Capacity);
+                Assert.IsTrue(view.DataPtr == buffer);
+                Assert.AreEqual(Allocator.None, (Allocator)view.Allocator.Value);
+            }
+            finally
+            {
+                Free(buffer);
+            }
+        }
+
+        [Test]
+        public void ConvertExistingData_RoundTripsEveryFieldAcrossFullCapacity()
+        {
+            // Writing every field at every index proves the per-array strides derived from the
+            // supplied capacity are correct and do not overlap.
+            void* buffer = Allocate(UnsafeSimpleEntitySoA.GetRequiredByteSize(Capacity), UnsafeSimpleEntitySoA.Alignment);
+
+            try
+            {
+                var view = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(buffer, Capacity, Allocator.None);
+
+                for (int i = 0; i < Capacity; i++)
+                {
+                    view.HealthPtr[i] = i * 1.5f;
+                    view.IdPtr[i] = i * 10;
+                    view.PositionPtr[i] = new float3(i, i + 1, i + 2);
+                }
+
+                for (int i = 0; i < Capacity; i++)
+                {
+                    Assert.AreEqual(i * 1.5f, view.HealthPtr[i]);
+                    Assert.AreEqual(i * 10, view.IdPtr[i]);
+                    Assert.AreEqual(new float3(i, i + 1, i + 2), view.PositionPtr[i]);
+                }
+            }
+            finally
+            {
+                Free(buffer);
+            }
+        }
+
+        [Test]
+        public void ConvertExistingData_FlaggedContainer_RoundTripsFieldsAndFlags()
+        {
+            // The bit array block sits past an 8-byte aligned gap after the primitive block, so this
+            // is what proves the flag offsets survive conversion.
+            var byteSize = UnsafeFlaggedEntitySoA.GetRequiredByteSize(Capacity);
+            void* buffer = Allocate(byteSize, UnsafeFlaggedEntitySoA.Alignment);
+
+            try
+            {
+                UnsafeUtility.MemClear(buffer, byteSize);
+
+                var view = UnsafeFlaggedEntitySoA.ConvertExistingDataToSoA(buffer, Capacity, Allocator.None);
+
+                view.SpeedPtr[3] = 5.5f;
+                view.ScorePtr[3] = 77;
+                view.IsActiveBitArray.Set(3, true);
+                view.IsVisibleBitArray.Set(11, true);
+
+                Assert.AreEqual(5.5f, view.SpeedPtr[3]);
+                Assert.AreEqual(77, view.ScorePtr[3]);
+                Assert.IsTrue(view.IsActiveBitArray.IsSet(3));
+                Assert.IsFalse(view.IsActiveBitArray.IsSet(11));
+                Assert.IsTrue(view.IsVisibleBitArray.IsSet(11));
+                Assert.IsFalse(view.IsVisibleBitArray.IsSet(3));
+            }
+            finally
+            {
+                Free(buffer);
+            }
+        }
+
+        [Test]
+        public void ConvertExistingData_AliasesOwningContainer()
+        {
+            using var owner = new UnsafeSimpleEntitySoA(Capacity, Allocator.Persistent, NativeArrayOptions.ClearMemory);
+
+            var view = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(owner.DataPtr, owner.Capacity, Allocator.None);
+
+            owner.HealthPtr[7] = 42.5f;
+            owner.PositionPtr[7] = new float3(1f, 2f, 3f);
+
+            Assert.AreEqual(42.5f, view.HealthPtr[7]);
+            Assert.AreEqual(new float3(1f, 2f, 3f), view.PositionPtr[7]);
+
+            view.IdPtr[9] = 99;
+
+            Assert.AreEqual(99, owner.IdPtr[9]);
+        }
+
+        [Test]
+        public void ConvertExistingData_NonOwningDispose_LeavesSourceIntact()
+        {
+            using var owner = new UnsafeSimpleEntitySoA(Capacity, Allocator.Persistent, NativeArrayOptions.ClearMemory);
+            owner.HealthPtr[0] = 12.5f;
+
+            var view = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(owner.DataPtr, owner.Capacity, Allocator.None);
+            view.Dispose();
+
+            Assert.IsFalse(view.IsCreated);
+            Assert.IsTrue(owner.IsCreated);
+            Assert.AreEqual(12.5f, owner.HealthPtr[0]);
+        }
+
+        [Test]
+        public void ConvertExistingData_OwningAllocator_DisposeReleasesBuffer()
+        {
+            void* buffer = Allocate(UnsafeSimpleEntitySoA.GetRequiredByteSize(Capacity), UnsafeSimpleEntitySoA.Alignment);
+
+            var container = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(buffer, Capacity, Allocator.Persistent);
+            container.HealthPtr[0] = 1f;
+
+            // Ownership was transferred, so Dispose frees the buffer and no manual Free follows.
+            // A leak or double free here is reported by the native leak detector.
+            container.Dispose();
+
+            Assert.IsFalse(container.IsCreated);
+        }
+
+        [Test]
+        public void ConvertExistingData_NullBufferWithZeroCapacity_IsAllowed()
+        {
+            var view = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(null, 0, Allocator.None);
+
+            Assert.IsFalse(view.IsCreated);
+            Assert.AreEqual(0, view.Capacity);
+        }
+
+        [Test]
+        public void GetRequiredByteSize_MatchesContainerByteSize()
+        {
+            using var simple = new UnsafeSimpleEntitySoA(Capacity, Allocator.Persistent);
+            using var flagged = new UnsafeFlaggedEntitySoA(Capacity, Allocator.Persistent);
+
+            Assert.AreEqual(simple.ByteSize, UnsafeSimpleEntitySoA.GetRequiredByteSize(simple.Capacity));
+            Assert.AreEqual(flagged.ByteSize, UnsafeFlaggedEntitySoA.GetRequiredByteSize(flagged.Capacity));
+        }
+
+        [Test]
+        public void GetRequiredByteSize_GenericMatchesConcrete()
+        {
+            Assert.AreEqual(
+                UnsafeSimpleEntitySoA.GetRequiredByteSize(Capacity),
+                SoAUnsafeUtility.GetRequiredByteSize<UnsafeSimpleEntitySoA>(Capacity));
+
+            Assert.AreEqual(
+                UnsafeFlaggedEntitySoA.GetRequiredByteSize(Capacity),
+                SoAUnsafeUtility.GetRequiredByteSize<UnsafeFlaggedEntitySoA>(Capacity));
+        }
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        [Test]
+        public void ConvertExistingData_NegativeCapacity_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(null, -1, Allocator.None));
+        }
+
+        [Test]
+        public void ConvertExistingData_NullBufferWithNonZeroCapacity_Throws()
+        {
+            Assert.Throws<ArgumentException>(() =>
+                UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(null, Capacity, Allocator.None));
+        }
+
+        [Test]
+        public void ConvertExistingData_MisalignedBuffer_Throws()
+        {
+            Assert.Greater(UnsafeSimpleEntitySoA.Alignment, 1, "A one byte alignment cannot be violated.");
+
+            var byteSize = UnsafeSimpleEntitySoA.GetRequiredByteSize(Capacity);
+            void* buffer = Allocate(byteSize + UnsafeSimpleEntitySoA.Alignment, UnsafeSimpleEntitySoA.Alignment);
+
+            try
+            {
+                // Held as IntPtr because a lambda cannot capture a variable of pointer type.
+                var misaligned = (IntPtr)((byte*)buffer + 1);
+
+                Assert.Throws<ArgumentException>(() =>
+                    UnsafeSimpleEntitySoA.ConvertExistingDataToSoA((void*)misaligned, Capacity, Allocator.None));
+            }
+            finally
+            {
+                Free(buffer);
+            }
+        }
+
+        [Test]
+        public void SetCapacity_OnNonOwningView_Throws()
+        {
+            // A converted view over a non-owning allocator is fixed capacity: resizing would have to
+            // reallocate through an allocator that does not own the buffer.
+            using var owner = new UnsafeSimpleEntitySoA(Capacity, Allocator.Persistent);
+
+            var view = UnsafeSimpleEntitySoA.ConvertExistingDataToSoA(owner.DataPtr, owner.Capacity, Allocator.None);
+
+            Assert.Throws<ArgumentException>(() => view.SetCapacity(Capacity * 2));
+        }
+#endif
     }
 }

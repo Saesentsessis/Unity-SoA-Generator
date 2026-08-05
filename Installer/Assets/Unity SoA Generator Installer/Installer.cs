@@ -15,7 +15,7 @@ namespace Saesentsessis.DOD.SoA.Generator.Installer
     public static partial class Installer
     {
         public const string PackageId = "com.saesentsessis.unity-soa-generator";
-        public const string Version = "1.0.1";
+        public const string Version = "1.0.2";
 
         static Installer()
         {

@@ -47,6 +47,9 @@ without requiring custom constructors or `partial` keyword.
 integration into `JobHandle` dependency chains.
 - **Safe Native Container:** Optionally generates a safe `NativeContainer` that replaces raw
 `*` pointers with `NativeArray<T>` and `NativeBitArray`, protected by Unity's safety checks.
+- **Zero-Copy Memory Views:** Reinterprets memory you already own (arena sub-allocations,
+native plugin buffers, an existing container) as an SoA container without copying, mirroring
+`NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray`.
 
 ## Unity-SoA vs. Cysharp's SoA Generator
 
@@ -88,7 +91,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 {
   "dependencies": {
     "com.saesentsessis.unity-collections-specialized": "0.2.0",
-    "com.saesentsessis.unity-soa-generator": "1.0.1"
+    "com.saesentsessis.unity-soa-generator": "1.0.2"
   },
   "scopedRegistries": [
     {
@@ -105,7 +108,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 ### Method 2: Unity package installer
 
 1. Download the latest `.unitypackage` from [GitHub Releases page](https://github.com/Saesentsessis/Unity-SoA-Generator/releases).
-   - _Direct Link:_ [Unity-SoA-Generator-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.1/Unity-SoA-Generator-Installer.unitypackage)
+   - _Direct Link:_ [Unity-SoA-Generator-Installer.unitypackage](https://github.com/Saesentsessis/Unity-SoA-Generator/releases/download/1.0.2/Unity-SoA-Generator-Installer.unitypackage)
 2. Import the downloaded package into your Unity project.
 3. The installer will automatically configure OpenUPM in your `manifest.json` file and install the package dependencies.
 
@@ -126,7 +129,7 @@ Or manually add the scoped registry to your `Packages/manifest.json`:
 You can specify exact release version of this package like this:
 
 ```
-https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root#1.0.1
+https://github.com/Saesentsessis/Unity-SoA-Generator.git?path=Unity-SoA-Generator/Assets/root#1.0.2
 ```
 
 ## Quick Start
@@ -225,6 +228,36 @@ bool isPinned = pointMasses.IsPinnedBitArray.IsSet(0);
 // Don't forget to free memory when your're done using it.
 pointMasses.Dispose();
 ```
+
+### Reinterpreting Existing Memory
+
+Use `ConvertExistingDataToSoA` to wrap memory you already own, without copying.
+
+```C#
+using Unity.Collections;
+
+AllocatorManager.AllocatorHandle allocator = Allocator.Persistent;
+
+unsafe
+{
+    // Size and align the buffer to the container's layout.
+    long byteSize = UnsafePointMassSoA.GetRequiredByteSize(10_000);
+    void* buffer = allocator.Allocate((int)byteSize, UnsafePointMassSoA.Alignment, 1);
+
+    // Allocator.None keeps ownership with the caller: Dispose() will not free the buffer.
+    var view = UnsafePointMassSoA.ConvertExistingDataToSoA(buffer, 10_000, Allocator.None);
+    view.VelocityPtr[0] = new float3(0f, -9.81f, 0f);
+
+    // Passing a deallocating handle instead transfers ownership, and Dispose() frees the buffer.
+    AllocatorManager.Free(allocator, buffer);
+}
+```
+
+> [!WARNING]
+> `capacity` is the stride of every field array, not a bounds hint. The buffer must have
+> been laid out for that exact capacity, otherwise every array past the first silently
+> points at the wrong memory. A view created over a non-owning allocator is fixed capacity,
+> since `SetCapacity` reallocates through the allocator it was handed.
 
 ## Technical Deep Dive
 
@@ -355,10 +388,20 @@ and `INativeDisposable`. Its primary API includes:
 - `public int Capacity { get; set; }`: Adjusts the total element capacity, handling internal
 buffer reallocation (`UnsafeUtility.MemCpy`) automatically.
 - `public long ByteSize { get; }`: Returns the total allocated memory footprint in bytes.
+- `public const int Alignment`: Required base-address alignment of the data block, in bytes.
+- `public static long GetRequiredByteSize(int capacity)`: Bytes a buffer must span to back
+the given capacity.
+- `public static Unsafe{Name}SoA ConvertExistingDataToSoA(void* dataPtr, int capacity,
+AllocatorManager.AllocatorHandle allocator)`: Reinterprets an existing buffer as a container
+without copying.
 - **Field Accessors:** Generates strongly-typed pointers for each standard field (e.g.,
 `public float3* VelocityPtr { get; }`).
 - **Flag Accessors:** If bit-packing is enabled, generates block-aligned `UnsafeBitArray`
 properties for each boolean field.
+
+The `SoAUnsafeUtility` static class complements these with `GetRequiredByteSize<T>` for code
+that is generic over container type, and the shared `CheckConvertArguments` guard used by
+every generated `ConvertExistingDataToSoA`.
 
 If `GenerateNativeContainer = true` is specified, the `Native{Name}SoA` container mirrors
 this API but replaces raw pointers with `NativeArray<T>` and `NativeBitArray`, integrating

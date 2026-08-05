@@ -14,7 +14,7 @@
         "Low Level",
         "HPC#"
     ],
-    "version": "1.0.1",
+    "version": "1.0.2",
     "unity": "2022.3",
     "description": "This package provides light weight Structure of Arrays(SoA) generator.\\nAll SoA's are Burst compatible out of the box.\\n\\nExtra features:\\n- (Optional) Nested struct flattening to remove any memory paddings providing zero wasted memory.\\n- (Optional) Generation of accessor methods to retrieve flattened entries.\\n- (Optional) Boolean field bit-packing to reduce memory consumption up to 87,5%.",
     "dependencies": {
