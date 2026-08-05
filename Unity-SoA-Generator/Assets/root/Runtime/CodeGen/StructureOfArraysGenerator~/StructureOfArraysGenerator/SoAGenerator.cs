@@ -424,7 +424,7 @@ public class SoAGenerator : IIncrementalGenerator
             .Append("public const int ElementSize = ").Append(elementSize).EndLine()
             .Append("public const int PaddingPerElement = ").Append(elementSize - rawElementSize).EndLine()
             .Append("public const int FlagCount = ").Append(flags.Length).EndLine()
-            .Append("private const int Alignment = ").Append(alignment).EndLine();
+            .Append("public const int Alignment = ").Append(alignment).EndLine();
 
         // Write constant offsets for fields
         for (int i = 0; i < fieldOffsets.Length; i++)
@@ -873,6 +873,54 @@ public class SoAGenerator : IIncrementalGenerator
             .AppendLine("return inputDeps;")
             .CloseScope();
         
+        // GetRequiredByteSize method
+        writer.AppendLine()
+            .AppendLine("/// <summary>")
+            .AppendLine("/// The number of bytes a buffer must span to back a container of the given capacity.")
+            .AppendLine("/// </summary>")
+            .AppendLine("/// <param name=\"capacity\">The capacity the buffer is laid out for.</param>")
+            .AppendLine("/// <returns>The required size of the data block in bytes.</returns>")
+            .AppendLine("[MethodImpl(MethodImplOptions.AggressiveInlining)]")
+            .AppendLine("public static long GetRequiredByteSize(int capacity)")
+            .OpenScope()
+            .AppendLine("return Bitwise.ComputeByteSize(ElementSize, capacity, FlagCount);")
+            .CloseScope();
+
+        // ConvertExistingDataToSoA method
+        writer.AppendLine()
+            .AppendLine("/// <summary>")
+            .Append("/// Reinterprets an existing buffer as a ").Append(unsafeStructName).AppendLine(" without copying.")
+            .AppendLine("/// </summary>")
+            .AppendLine("/// <param name=\"dataPtr\">")
+            .AppendLine("/// Base address of a buffer already laid out for exactly the given capacity. It must span at")
+            .AppendLine("/// least GetRequiredByteSize(capacity) bytes and be aligned to the Alignment constant.")
+            .AppendLine("/// </param>")
+            .AppendLine("/// <param name=\"capacity\">")
+            .AppendLine("/// The capacity the buffer was laid out for. This is the stride of every field array rather")
+            .AppendLine("/// than a bounds hint, so a mismatch silently misaligns every array past the first.")
+            .AppendLine("/// </param>")
+            .AppendLine("/// <param name=\"allocator\">")
+            .AppendLine("/// Allocator.None to create a non-owning view, in which case Dispose leaves the buffer alone.")
+            .AppendLine("/// Any deallocating handle transfers ownership of the buffer to the returned container.")
+            .AppendLine("/// </param>")
+            .Append("/// <returns>A ").Append(unsafeStructName).AppendLine(" aliasing the supplied buffer.</returns>")
+            .AppendLine("/// <remarks>")
+            .AppendLine("/// A container created over a non-owning allocator must be treated as fixed capacity, since")
+            .AppendLine("/// SetCapacity reallocates through the allocator it was handed.")
+            .AppendLine("/// </remarks>")
+            .Append("public static ").Append(unsafeStructName).AppendLine(" ConvertExistingDataToSoA(void* dataPtr, int capacity,").IncrementIndent()
+            .AppendLine("AllocatorManager.AllocatorHandle allocator)").DecrementIndent()
+            .OpenScope()
+            .AppendLine("SoAUnsafeUtility.CheckConvertArguments(dataPtr, capacity, ElementSize, FlagCount, Alignment, MaxCapacity);")
+            .AppendLine()
+            .Append(unsafeStructName).AppendLine(" result = default;")
+            .AppendLine("result._dataPtr = dataPtr;")
+            .AppendLine("result._capacity = capacity;")
+            .AppendLine("result._allocator = allocator;")
+            .AppendLine()
+            .AppendLine("return result;")
+            .CloseScope();
+
         // Create method
         writer.AppendLine()
             .Append("internal static ").Append(unsafeStructName).AppendLine("* Create<U>(int initialCapacity, ref U allocator, NativeArrayOptions options)").IncrementIndent()
